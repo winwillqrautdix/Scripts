@@ -1,0 +1,146 @@
+--Made By Meentoz V1 AutoFarm Heart AdoptMe Valentines 2026 
+local player = game.Players.LocalPlayer
+local PlayerGui = player:WaitForChild("PlayerGui")
+local UserInputService = game:GetService("UserInputService")
+
+local teleportActive = false
+local dragging = false
+local dragStart, startPos
+
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "DraggableHeartFarmGUI"
+ScreenGui.Parent = PlayerGui
+
+local MainFrame = Instance.new("Frame")
+MainFrame.Size = UDim2.new(0, 220, 0, 150)
+MainFrame.Position = UDim2.new(0, 50, 0, 100)
+MainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+MainFrame.BackgroundTransparency = 0.1
+MainFrame.Active = true
+MainFrame.Parent = ScreenGui
+
+local Corner = Instance.new("UICorner")
+Corner.CornerRadius = UDim.new(0, 10)
+Corner.Parent = MainFrame
+
+local Stroke = Instance.new("UIStroke")
+Stroke.Color = Color3.fromRGB(255, 100, 100)
+Stroke.Thickness = 2
+Stroke.Parent = MainFrame
+
+local DragBar = Instance.new("Frame")
+DragBar.Size = UDim2.new(1, 0, 0, 30)
+DragBar.BackgroundColor3 = Color3.fromRGB(50, 50, 70)
+DragBar.BackgroundTransparency = 0.3
+DragBar.Parent = MainFrame
+
+local DragCorner = Instance.new("UICorner")
+DragCorner.CornerRadius = UDim.new(0, 10)
+DragCorner.Parent = DragBar
+
+local DragText = Instance.new("TextLabel")
+DragText.Text = " AutoFarm Heart AdoptMe"
+DragText.Size = UDim2.new(1, 0, 1, 0)
+DragText.BackgroundTransparency = 1
+DragText.TextColor3 = Color3.fromRGB(200, 200, 200)
+DragText.Font = Enum.Font.GothamBold
+DragText.TextSize = 12
+DragText.Parent = DragBar
+
+local function makeDraggable(frame, dragBar)
+    dragBar.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true
+            dragStart = input.Position
+            startPos = frame.Position
+            
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                end
+            end)
+        end
+    end)
+    
+    UserInputService.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement and dragging then
+            local delta = input.Position - dragStart
+            frame.Position = UDim2.new(
+                startPos.X.Scale, 
+                startPos.X.Offset + delta.X, 
+                startPos.Y.Scale, 
+                startPos.Y.Offset + delta.Y
+            )
+        end
+    end)
+end
+
+makeDraggable(MainFrame, DragBar)
+
+local ControlButton = Instance.new("TextButton")
+ControlButton.Text = "START FARM"
+ControlButton.Size = UDim2.new(0.8, 0, 0, 50)
+ControlButton.Position = UDim2.new(0.1, 0, 0.3, 0)
+ControlButton.BackgroundColor3 = Color3.fromRGB(100, 200, 100)
+ControlButton.TextColor3 = Color3.new(1, 1, 1)
+ControlButton.Font = Enum.Font.GothamBold
+ControlButton.TextSize = 14
+ControlButton.Parent = MainFrame
+
+local BtnCorner = Instance.new("UICorner")
+BtnCorner.CornerRadius = UDim.new(0, 8)
+BtnCorner.Parent = ControlButton
+
+local StatusLabel = Instance.new("TextLabel")
+StatusLabel.Text = "Status: OFF"
+StatusLabel.Size = UDim2.new(1, 0, 0, 20)
+StatusLabel.Position = UDim2.new(0, 0, 0.8, 0)
+StatusLabel.BackgroundTransparency = 1
+StatusLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
+StatusLabel.Font = Enum.Font.Gotham
+StatusLabel.TextSize = 12
+StatusLabel.TextXAlignment = Enum.TextXAlignment.Center
+StatusLabel.Parent = MainFrame
+
+ControlButton.MouseButton1Click:Connect(function()
+    teleportActive = not teleportActive
+    
+    if teleportActive then
+        ControlButton.Text = "STOP FARM"
+        ControlButton.BackgroundColor3 = Color3.fromRGB(200, 100, 100)
+        StatusLabel.Text = "Status: FARMING"
+        StatusLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
+        DragText.TextColor3 = Color3.fromRGB(100, 255, 100)
+        print("âœ… AutoFarm On")
+    else
+        ControlButton.Text = "START FARM"
+        ControlButton.BackgroundColor3 = Color3.fromRGB(100, 200, 100)
+        StatusLabel.Text = "Status: OFF"
+        StatusLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
+        DragText.TextColor3 = Color3.fromRGB(200, 200, 200)
+        print("â›” AutoFarm Off")
+    end
+end)
+
+spawn(function()
+    local hrp = player.Character:WaitForChild("HumanoidRootPart")
+    local TARGET = CFrame.new(-338.9837646484375, 31.034208297729492, -1442.8511962890625)
+    
+    while task.wait(1) do
+        if teleportActive then
+            for _, v in pairs(workspace:GetChildren()) do
+                if v.Name == "HeartPickup" then
+                    local part = v.PrimaryPart or v:FindFirstChildWhichIsA("BasePart")
+                    if part then
+                        hrp.CFrame = part.CFrame * CFrame.new(0, 3, 0)
+                        break
+                    end
+                end
+            end
+            
+            task.wait(1.2)
+            
+            hrp.CFrame = TARGET
+        end
+    end
+end)
