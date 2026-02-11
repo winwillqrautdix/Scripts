@@ -2,8 +2,11 @@
 local player = game.Players.LocalPlayer
 local PlayerGui = player:WaitForChild("PlayerGui")
 local UserInputService = game:GetService("UserInputService")
+local VirtualInputManager = game:GetService("VirtualInputManager")
 
 local teleportActive = false
+local teleportOneTimeDone = false
+local canCollectHearts = false
 local dragging = false
 local dragStart, startPos
 
@@ -102,6 +105,20 @@ StatusLabel.TextSize = 12
 StatusLabel.TextXAlignment = Enum.TextXAlignment.Center
 StatusLabel.Parent = MainFrame
 
+local function stepForwardReal()
+    task.spawn(function()
+        local character = player.Character
+        if not character then return end
+        local humanoid = character:FindFirstChildWhichIsA("Humanoid")
+        if humanoid then
+            VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.S, false, game)
+            task.wait(0.2)
+            VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.S, false, game)
+            print("👣 Шаг вперед")
+        end
+    end)
+end
+
 ControlButton.MouseButton1Click:Connect(function()
     teleportActive = not teleportActive
     
@@ -111,36 +128,106 @@ ControlButton.MouseButton1Click:Connect(function()
         StatusLabel.Text = "Status: FARMING"
         StatusLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
         DragText.TextColor3 = Color3.fromRGB(100, 255, 100)
-        print("âœ… AutoFarm On")
+        print("✅ AutoFarm On")
+        
+        canCollectHearts = false
+        
+        if not teleportOneTimeDone then
+            teleportOneTimeDone = true
+            task.spawn(function()
+                local character = player.Character
+                if not character then
+                    character = player.CharacterAdded:Wait()
+                end
+                
+                local hrp = character:WaitForChild("HumanoidRootPart")
+                local targetPosition1 = Vector3.new(-3024.21484375, 6529.39794921875, -8958.8095703125)
+                hrp.CFrame = CFrame.new(targetPosition1)
+                task.wait(1)
+                stepForwardReal()
+                task.wait(1)
+                canCollectHearts = true
+                StatusLabel.Text = "Status: FARMING (COLLECTING)"
+            end)
+        else
+            canCollectHearts = true
+            StatusLabel.Text = "Status: FARMING (COLLECTING)"
+        end
     else
         ControlButton.Text = "START FARM"
         ControlButton.BackgroundColor3 = Color3.fromRGB(100, 200, 100)
         StatusLabel.Text = "Status: OFF"
         StatusLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
         DragText.TextColor3 = Color3.fromRGB(200, 200, 200)
-        print("â›” AutoFarm Off")
+        canCollectHearts = false
+        print("⛔ AutoFarm Off")
     end
 end)
 
 spawn(function()
-    local hrp = player.Character:WaitForChild("HumanoidRootPart")
     local TARGET = CFrame.new(-338.9837646484375, 31.034208297729492, -1442.8511962890625)
     
-    while task.wait(1) do
-        if teleportActive then
+    local function getHeartPart(obj)
+        if obj:IsA("Sound") then
+            return nil
+        end
+        
+        if obj.PrimaryPart then
+            return obj.PrimaryPart
+        end
+        
+        local part = obj:FindFirstChildWhichIsA("BasePart")
+        if part then
+            return part
+        end
+        
+        if obj:IsA("BasePart") then
+            return obj
+        end
+        
+        return nil
+    end
+    
+    while task.wait(0.8) do
+        if teleportActive and canCollectHearts then
+            local character = player.Character
+            if not character then continue end
+            
+            local hrp = character:FindFirstChild("HumanoidRootPart")
+            if not hrp then continue end
+            
+            local heartPart = nil
+            
             for _, v in pairs(workspace:GetChildren()) do
                 if v.Name == "HeartPickup" then
-                    local part = v.PrimaryPart or v:FindFirstChildWhichIsA("BasePart")
-                    if part then
-                        hrp.CFrame = part.CFrame * CFrame.new(0, 3, 0)
-                        break
+                    heartPart = getHeartPart(v)
+                    if heartPart then break end
+                end
+            end
+            
+            -- Если не нашли, ищем глубже
+            if not heartPart then
+                for _, v in pairs(workspace:GetDescendants()) do
+                    if v.Name == "HeartPickup" and not v:IsA("Sound") then
+                        heartPart = getHeartPart(v)
+                        if heartPart then break end
                     end
                 end
             end
             
-            task.wait(1.2)
+            -- ТП К СЕРДЦУ
+            if heartPart then
+                hrp.CFrame = heartPart.CFrame * CFrame.new(0, 3, 0)
+                task.wait(0.3)
+            end
             
-            hrp.CFrame = TARGET
+            -- ВОЗВРАТ
+            if hrp and hrp.Parent then
+                hrp.CFrame = TARGET
+                task.wait(0.2)
+            end
         end
     end
 end)
+
+print("made by meentoz")
