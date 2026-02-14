@@ -1,5 +1,4 @@
 -- AutoFarm v1 mm2 by meentoz (Valentine Edition) 
--- Переделано: вместо снежинок сыпятся сердечки
 
 local ScreenGui = Instance.new("ScreenGui")
 local player = game:GetService("Players").LocalPlayer
